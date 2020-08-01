@@ -68,10 +68,78 @@ export default class Dep {
     }
   }
 
-removeSub(sub) {
-  const index = this.subs.indexOf(sub);
-  if (index > -1) {
-    return this.subs.splice(index, 1);
+  removeSub(sub) {
+    const index = this.subs.indexOf(sub);
+    if (index > -1) {
+      return this.subs.splice(index, 1);
+    }
   }
 }
+
+export default class Watcher {
+  constructor(vm, expOrFn, cb) {
+    this.vm = vm;
+
+    // 新增
+    if (options) {
+      this.deep = !!options.deep;
+    } else {
+      this.deep = false;
+    }
+
+    this.deps = [];
+    this.depIds = new Set();
+    if (typeof expOrFn === 'function') {
+      this.getter = expOrFn;
+    } else {
+      this.getter = parsePath(expOrFn);
+    }
+    this.cb = cb;
+    this.value = this.get();
+  }
+  get() {
+    window.target = this;
+    let value = this.getter.call(vm, vm);
+
+    if (this.deep) {
+      traverse(value);
+    }
+    window.target = undefined;
+    return value;
+  }
+}
+
+const seenObjects = new Set();
+
+export function traverse(value) {
+  _traverse(val, seenObjects);
+  seenObjects.clear();
+}
+
+function _traverse(val, seen) {
+  let i, keys;
+  const isArr = Array.isArray(val);
+  const isObject = typeof val === 'object';
+  if ((!isArr && !isObject(val)) || Object.isFrozen(val)) {
+    return;
+  }
+  if (val.__ob__) {
+    const depId = val.__ob__.dep.id;
+    if (seen.has(depId)) {
+      return;
+    }
+    seen.add(depId);
+  }
+  if (isArr) {
+    i = val.length;
+    while (i--) {
+      _traverse(val[i], seen);
+    }
+  } else {
+    keys = Object.keys(val);
+    i = keys.length;
+    while (i--) {
+      _traverse(val[key[i]], seen);
+    }
+  }
 }

@@ -239,3 +239,102 @@
 
 3. ##### deep参数的原理
 
+   Watcher想监听某个数据，就会触发某个数据收集依赖的逻辑，将自己收集进去，然后当它发生变化时，就会通知Watcher。要实现deep的功能，其实就是除了要触发当前这个被监听数据的收集依赖的逻辑之外，还有把当前监听的这个值在内的所有子值都触发一遍收集依赖逻辑。这样就可以实现当前这个依赖的所有子数据发生变化时，通知当前Watcher了。
+
+   ```js
+   export default class Watcher {
+     constructor(vm, expOrFn, cb) {
+       this.vm = vm;
+   
+       // 新增
+       if (options) {
+         this.deep = !!options.deep;
+       } else {
+         this.deep = false;
+       }
+   
+       this.deps = [];
+       this.depIds = new Set();
+       if (typeof expOrFn === 'function') {
+         this.getter = expOrFn;
+       } else {
+         this.getter = parsePath(expOrFn);
+       }
+       this.cb = cb;
+       this.value = this.get();
+     }
+     get() {
+       window.target = this;
+       let value = this.getter.call(vm, vm);
+   	// 新增
+       if (this.deep) {
+         traverse(value);
+       }
+       window.target = undefined;
+       return value;
+     }
+   }
+   ```
+
+   在上面的代码中，如果用户使用了deep参数，则在window.target = undefined 之前调用traverse来处理deep的逻辑。
+
+   这里非常强调的一点是，一定要在window.target = undefined 之前去触发子值的依赖收集逻辑，这样才能保证子值收集的依赖是当前这个Watcher。如果在window.target = undefined 之后去触发收集依赖的逻辑，那么其实当前的Watcher并不会被收集到子值的依赖列表中，也就无法实现deep的功能。
+
+   接下来，通过递归value的所有子值来触发它们收集依赖的功能：
+
+   ```js
+   
+   const seenObjects = new Set();
+   
+   export function traverse(value) {
+     _traverse(val, seenObjects);
+     seenObjects.clear();
+   }
+   
+   function _traverse(val, seen) {
+     let i, keys;
+     const isArr = Array.isArray(val);
+     const isObject = typeof val === 'object';
+     if ((!isArr && !isObject(val)) || Object.isFrozen(val)) {
+       return;
+     }
+     if (val.__ob__) {
+       const depId = val.__ob__.dep.id;
+       if (seen.has(depId)) {
+         return;
+       }
+       seen.add(depId);
+     }
+     if (isArr) {
+       i = val.length;
+       while (i--) {
+         _traverse(val[i], seen);
+       }
+     } else {
+       keys = Object.keys(val);
+       i = keys.length;
+       while (i--) {
+         _traverse(val[key[i]], seen);
+       }
+     }
+   }
+   ```
+
+   这里我们首先判断val的类型，如果它不是Array和Object，或者已经被冻结，那么直接返回，什么都不干。
+
+   然后拿到val的dep.id，用这个id来保证不会重复收集依赖。
+
+   如果是数组，则循环数组，将数组中的每一项递归调用_traverse。
+
+   如果是Object类型的数据，则循环OBject中所有的key，然后执行一次读取操作，再递归子值：
+
+   ```js
+   while (i--) {
+       _traverse(val[key[i]], seen);
+   }
+   ```
+
+   其中val[keys[i]]会触发getter，也就是说会触发收集依赖的操作，这是window.target还没有被情况，就会将当前的Watcher收集进去。这也就是之前强调一定再window.target = undefined 之前触发收集依赖的原因。
+
+   而_traverse 函数其实是一个递归操作，所以这个value的子值也会触发同样的逻辑，这样就可以实现通过deep参数来监听所有子值的变化。
+
