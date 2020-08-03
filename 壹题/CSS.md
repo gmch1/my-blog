@@ -319,5 +319,196 @@
 
 
 
-​	
+#### 52.水平垂直居中
 
+```html
+<div class="father">
+    <div class="child"></div>
+</div>
+```
+
+1. ###### 水平居中
+
+   - 对于行内元素 text-align ：center
+
+   - 对于确定宽度的块级元素：
+
+     - margin 和 width 实现 ：margin ：0 auto；
+     - 绝对定位和margin-left：-width/2，前提是父元素相对定位
+
+   - 对于宽度未知的块级元素
+
+     - table布局配合margin auto
+
+       ```css
+       display: table;
+       margin: auto;
+       ```
+
+     - inline-block 和 text-align ： center
+
+     - 绝对定位 + transfrom，translateX移动本身元素50%
+
+     - flex布局使用     justify-content: center;
+
+2. ###### 垂直居中
+
+   1. 利用line-height 实现居中，适用于纯文字。
+
+   2. 设置父元素相对定位，子元素绝对定位，通过 margin实现自适应居中。
+
+   3. 弹性布局flex，父元素display：flex；子元素margin：auto；
+
+   4. 父元素相对定位，子元素设置绝对定位，再利用transform。
+
+   5. table布局
+
+      ```css
+      div.parent {
+      	display: table;
+      }
+      div.child {
+          display: table-cell
+          vertical-align: middle;
+          text-align: center;
+      }
+      ```
+
+   6. grid布局
+
+      ```css
+      div.parent{
+          display:grid; 
+      }
+      div.child{
+          margin:auto; 
+      }
+      ```
+
+
+
+#### 57.opacity、visibility、display区别
+
+1. ###### 结构：
+
+   display:none: 会让元素完全从渲染树中消失，渲染的时候不占据任何空间, 不能点击，
+   visibility: hidden:不会让元素从渲染树消失，渲染元素继续占据空间，只是内容不可见，不能点击
+   opacity: 0: 不会让元素从渲染树消失，渲染元素继续占据空间，只是内容不可见，可以点击
+
+2. ###### 继承：
+
+   display: none和opacity: 0：是非继承属性，子孙节点消失由于元素从渲染树消失造成，通过修改子孙节点属性无法显示。
+   visibility: hidden：是继承属性，子孙节点消失由于继承了hidden，通过设置visibility: visible;可以让子孙节点显式。
+
+3. ###### 性能
+
+   displaynone : 修改元素会造成文档回流,读屏器不会读取display: none元素内容，性能消耗较大
+   visibility:hidden: 修改元素只会造成本元素的重绘,性能消耗较少读屏器读取visibility: hidden元素内容
+   opacity: 0 ： 修改元素会造成重绘，性能消耗较少
+
+4. ###### 联系
+
+   它们都能让元素不可见
+
+
+
+#### 60.修改图片宽度
+
+```html
+<img src="1.jpg" style="width:480px!important;”>
+```
+
+1. ```html
+   <img src="1.jpg" style="width:480px!important; max-wdth:300px;”>
+   ```
+
+2. ```html
+   <img src="1.jpg" style="width:480px!important; width:300px!important;”>
+   ```
+
+3. ```html
+   <img src="1.jpg" style="width:480px!important; box-sizing:border-box;padding:0 90px ”>
+   ```
+
+4. ```html
+   <img src="1.jpg" style="width:480px!important; transform(0.625,1)”>
+   ```
+
+5. ```css
+   img{
+       animation: test 0s forwards;
+   }
+   @keyframes test{
+       from{
+           width:300px;
+       }
+       to{
+           width:300px;
+       }
+   }
+   // 利用css动画的样式优先级比！important高的特性
+   ```
+
+
+
+#### 68.移动端1px问题
+
+​	伪元素::after + height 1px ，再进行缩放
+
+ 
+
+#### 73.介绍下BFC、IFC、GFC和FFC
+
+- ##### BFC
+
+  - 块级格式化上下文
+  - 页面上一个隔离的渲染区域
+  - 触发方式 ---见上面 ⬆
+
+- ##### IFC
+
+  - 内联格式化上下文
+
+  - IFC的高度由其包含行内元素中最高的实际高度计算而来（不受到垂直方向的padding/margin影响）IFC中的line box一般左右都紧贴整个IFC，但是会因为float元素而扰乱。float元素会位于IFC与line box之间，使得line box宽度缩短。通过IFC下的多个line box高度会不同
+
+  - IFC中是不可能有块级元素的，当插入块级元素时，会产生两个匿名块与div分隔开，即产生两个IFC，每个IFC对外表现为块级元素，与div垂直排列。
+
+  - IFC作用
+
+    1. 水平居中
+
+       当一个块要再环境中水平居中时，设置其为inline-block则会再外层产生IFC，通过text-align则可以使其水平居中。
+
+    2. 垂直居中
+
+       创建一个IFC，用其中一个元素撑开父元素的高度，然后设置其vertical-align:middle，其他行内元素则可以在此父元素下垂直居中。
+
+- FFC
+
+  - 自适应格式化上下文
+  - display值为flex或者inline-flex的元素将会生成自适应容器（flex-container）。Flex Box由伸缩容器和伸缩项目组成。通过设置元素的display属性为flex或inline-flex可以得到一个伸缩容器。设置为flex的容器被渲染为一个块级元素，而设置为inline-flex的容器则渲染为一个行内元素。伸缩容器中的每一个子元素都是一个伸缩项目。伸缩项目可以是任意数量的。伸缩容器外和伸缩项目内的一切元素都不受影响。简单来说，Flexbox定义了伸缩容器内伸缩项目该如何布局。
+
+
+
+#### 127.多行文本省略
+
+- ##### 单行
+
+  ```css
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  ```
+
+- ##### 多行
+
+  ```css
+  diplay:-webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3; //行数
+  overflow: hidden;
+  ```
+
+  
+
+#### flex布局
