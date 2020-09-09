@@ -50,7 +50,7 @@
    2. chunk 打包在内存的文件，例如entry配置的入口，会打包到【name】这种chunk，使用import懒加载的模块也是chunk，再者使用split chunk实现的公共代码抽离
    3. bundle 是最终生成的文件
 
-8. ##### 热更新 hmt
+8. ##### 热更新 hmr
 
    1. 只更换改变的代码，不改变网页的状态
 
